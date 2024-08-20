@@ -13,19 +13,25 @@ def initial_search():
                          "\nЧто вы хотите найти? ")
     browser.find_element(By.ID, "searchInput").send_keys(first_choice, Keys.ENTER)
     if browser.find_element(By.ID, "firstHeading").get_attribute("textContent") == "Результаты поиска":
-        browser.find_element(By.CLASS_NAME, "mw-search-result-heading").find_element(By.TAG_NAME, "a").click()
+        new_link = browser.find_element(By.CLASS_NAME, "mw-search-result-heading").find_element(By.TAG_NAME,
+                                                                                                "a").get_attribute(
+            "href")
+        browser.get(new_link)
+    return
 
 
 def scroll_article():
     print("Нажимайте Enter для листания параграфов.")
     paragraphs = browser.find_elements(By.TAG_NAME, "p")
     for paragraph in paragraphs:
-        print(paragraph.text)
+        pprint.pprint(paragraph.text)
         input()
+    return
 
 
 def get_hatnotes():
     hh = []
+    time.sleep(1)
     for element in browser.find_elements(By.TAG_NAME, "div"):
         cl = element.get_attribute("class")
         if cl == "hatnote navigation-not-searchable":
@@ -33,38 +39,41 @@ def get_hatnotes():
     return hh
 
 
+def choose_hatnote(hh):
+    for i in range(len(hh)):
+        print(f"{i + 1}) {hh[i].find_element(By.TAG_NAME, 'a').get_attribute('text')}")
+    return (hh[int(input("Выберите номер интересующей статьи: ")) - 1].find_element(By.TAG_NAME, "a")
+            .get_attribute("href"))
+
+
 browser = webdriver.Chrome()
 initial_search()
-hatnotes = get_hatnotes()
+time.sleep(1)
+do_flag = True
 
-print(f"Ваш поиск вернул статью с {len(hatnotes)} связанными с ней статьями."
-      f"\nВы можете: \n1) листать параграфы текущей статьи, \n2) перейти на одну из "
-      f"связанных страниц или \n3) выйти из программы.")
-while True:
-    try:
-        choice = int(input("Ваш выбор 1, 2 или 3: "))
-        if choice not in [1, 2, 3]:
-            raise ValueError
-        break
-    except ValueError:
-        print("Неверное значение. Попробуйте ещё раз.")
+while do_flag:
+    hatnotes = get_hatnotes()
 
-if choice == 1:
-    scroll_article()
-elif choice == 2:
-    link = hatnotes[0].find_element(By.TAG_NAME, "a").get_attribute("href")
-    browser.get(link)
-    scroll_article()
-elif choice == 3:
-    browser.quit()
+    print(f"\nВаш поиск вернул статью с {len(hatnotes)} связанными с ней статьями."
+          f"\nВы можете: \n1) листать параграфы текущей статьи, \n2) перейти на одну из "
+          f"связанных страниц или \n3) выйти из программы.")
+    while True:
+        try:
+            choice = int(input("Ваш выбор 1, 2 или 3: "))
+            if choice not in [1, 2, 3]:
+                raise ValueError
+            break
+        except ValueError:
+            print("Неверное значение. Попробуйте ещё раз.")
 
+    if choice == 1:
+        scroll_article()
+    elif choice == 2:
+        browser.get(choose_hatnote(hatnotes))
+    elif choice == 3:
+        do_flag = False
 
-hatnote = random.choice(hatnotes)
+input("Нажмите Enter для выхода из программы. ")
 
-input("Нажмите Enter. ")
-
-link = hatnote.find_element(By.TAG_NAME, "a").get_attribute("href")
-browser.get(link)
-input("Нажмите Enter. ")
 time.sleep(10)
 browser.quit()
